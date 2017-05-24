@@ -24,14 +24,10 @@ int main(int argc, char **argv){
 			fs_format();
 		}
 		
-	}
-
         if( !strcmp(argv[1], "-create")){
-			fs_create(argv[2],argv[3]);
+			fs_create(argv[2], argv[3]);
 		}
-		
-	
-	
+	}	
 	
 	/* Implement the other filesystem calls here!! */
 	

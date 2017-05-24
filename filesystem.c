@@ -50,13 +50,64 @@ int fs_format(){
  * @return 0 on success.
  */
 int fs_create(char* input_file, char* simul_file){
-	int ret;
-	
+	int ret, aux;
+    struct root_table_directory root_dir;
+	struct sector_data sector;
+    struct table_directory directory;
+
+    
 	if ( (ret = ds_init(FILENAME, SECTOR_SIZE, NUMBER_OF_SECTORS, 0)) != 0 ){
 		return ret;
 	}
+    
+    ds_read_sector(0,(void*)&root_dir,SECTOR_SIZE);
+   /* ds_read_sector(root_dir.free_sectors_list,(void*)&sector,SECTOR_SIZE); */
+    
+    printf("Diretório [0] arquivo [1] :");
+    scanf("%d",&aux);
+    /*sector.data = input_file; */   
+    
+    if(aux == 0){
+        root_dir.entries[root_dir.free_sectors_list].dir = 0;
+         strcpy(root_dir.entries[root_dir.free_sectors_list].name,simul_file);
+         root_dir.entries[root_dir.free_sectors_list].size_bytes = 0;  
+        root_dir.entries[root_dir.free_sectors_list].sector_start = 0;
+        
+        ds_write_sector(root_dir.free_sectors_list,(void*)&directory,SECTOR_SIZE);
 
-	/* Write the code to load a new file to the simulated filesystem. */
+        printf("%ld", sizeof(&directory));
+
+        root_dir.free_sectors_list ++;
+    }
+    
+    if(aux == 1){  
+       char data[508] = "Hey apple!";
+
+       root_dir.entries[root_dir.free_sectors_list].dir = 1;
+       strcpy(root_dir.entries[root_dir.free_sectors_list].name,simul_file);
+       root_dir.entries[root_dir.free_sectors_list].size_bytes = 2;  
+       root_dir.entries[root_dir.free_sectors_list].sector_start = root_dir.free_sectors_list;
+       
+
+        strcpy(sector.data,data);
+
+        printf("%c", sector.data[0]);
+
+        ds_write_sector((int)root_dir.free_sectors_list,(void*)&sector,SECTOR_SIZE);
+
+        //if(root_dir.entries[root_dir.free_sectors_list].size_bytes < 512)
+            //root_dir.free_sectors_list ++;
+        //else
+            //root_dir.free_sectors_list = root_dir.free_sectors_list + 2;
+    
+      }
+
+   if(root_dir.entries[root_dir.free_sectors_list - 1].dir == 1)
+        printf("\n Seu arquivo foi criado\n");
+    else if(root_dir.entries[root_dir.free_sectors_list - 1].dir == 0)
+        printf("\n Seu diretorio foi criado\n");
+    else
+        printf("\nERROR");
 	
 	ds_stop();
 	

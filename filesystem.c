@@ -137,12 +137,33 @@ int fs_ls(char *dir_path){
  * @return 0 on success.
  */
 int fs_mkdir(char* directory_path){
-	int ret;
+	int ret, i;
+	struct root_table_directory root_dir;
+	struct sector_data sector;
+
+	/* Initialize Virtual Memory */
 	if ( (ret = ds_init(FILENAME, SECTOR_SIZE, NUMBER_OF_SECTORS, 0)) != 0 ){
 		return ret;
 	}
 	
-	/* Write the code to create a new directory. */
+	/* Code to create a new directory. */
+	ds_read_sector(0,(void*)&root_dir, SECTOR_SIZE); //Read root dir
+	
+	/* Code to travel to directory*/
+	char* pch = strtok(directory_path, "/")
+	/*FUnciona so com o primeiro loop ate agora, tem que fazer mais generico o FOR */ 
+	while(pch != NULL) {
+		for(i=0, i<15, i++) {
+			if (strcmp(root_dir.entries[i].name, pch) == 0) { //Isso ta meio feio, deve ter como fazer mais bonito
+				ds_read_sector(root_dir.entries[i].sector_start,(void*)&sector,SECTOR_SIZE);
+				break
+			}
+			pch = strtok(NULL, "/");
+		} 
+		
+	}
+
+	
 	
 	ds_stop();
 	

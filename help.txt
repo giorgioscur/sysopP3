@@ -14,3 +14,4 @@ hexdump simul.fs -- imprime no terminal o arquivo em hexa (depuração)
 	
 		git checkout . -- reseta todas as tuas alteracoes em todos os arquivos alterados ate o ultimo commit.
 		git add --all  -- dependendo da tua versao do git, ele nao aceita o argumento "." para adicionar arquivos deletados, nesses casos deve passar o argumento --all.
+		git pull -- procura e puxa alteracoes nos arquivos

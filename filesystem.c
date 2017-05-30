@@ -50,25 +50,37 @@ int fs_format(){
  * @return 0 on success.
  */
 int fs_create(char* input_file, char* simul_file){
-	int ret;
+	int ret, tam;
     struct root_table_directory root_dir;
 	struct sector_data sector;
-    char data[508] = "Hey apple!";
-    
+    char data[100];
+    FILE *ptr;
+
 	if ( (ret = ds_init(FILENAME, SECTOR_SIZE, NUMBER_OF_SECTORS, 0)) != 0 ){
 		return ret;
 	}
     
     ds_read_sector(0,(void*)&root_dir, SECTOR_SIZE);
-    //root_dir.entries[root_dir.free_sectors_list].dir = 1;
-    //strcpy(root_dir.entries[root_dir.free_sectors_list].name, simul_file);
-    //root_dir.entries[root_dir.free_sectors_list].size_bytes = 2;  
-    //root_dir.entries[root_dir.free_sectors_list].sector_start = root_dir.free_sectors_list;
-	
-    strcpy(sector.data, data);
+    ds_read_sector(root_dir.free_sectors_list,(void*)&sector, SECTOR_SIZE);
 
-    printf("%c\n", sector.data[0]);
-	fflush(stdout);
+    ptr = fopen (input_file,"r");
+    fread(&data, sizeof(char), 100,ptr);    
+    printf("\nO conteúdo do arquivo é':\n %s \n", data);
+    
+    fseek (ptr, 0, SEEK_END);
+    tam = ftell (ptr);
+
+    printf("\nTamanho:\n %d \n", tam);
+
+    fclose(ptr);
+
+    root_dir.entries[root_dir.free_sectors_list].dir = 0;
+    strcpy(root_dir.entries[root_dir.free_sectors_list].name, simul_file);
+    root_dir.entries[root_dir.free_sectors_list].size_bytes = 2;  
+    root_dir.entries[root_dir.free_sectors_list].sector_start = root_dir.free_sectors_list;
+    
+    strcpy(sector.data,data);
+
     ds_write_sector(root_dir.free_sectors_list,(void*)&sector, SECTOR_SIZE);
 
 	ds_stop();

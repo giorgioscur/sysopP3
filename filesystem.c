@@ -50,7 +50,7 @@ int fs_format(){
  * @return 0 on success.
  */
 int fs_create(char* input_file, char* simul_file){
-	int ret, tam;
+	int ret, tam, tamaux=0;
     struct root_table_directory root_dir;
 	struct sector_data sector;
     char data[100];
@@ -63,26 +63,46 @@ int fs_create(char* input_file, char* simul_file){
     ds_read_sector(0,(void*)&root_dir, SECTOR_SIZE);
     ds_read_sector(root_dir.free_sectors_list,(void*)&sector, SECTOR_SIZE);
 
-    ptr = fopen (input_file,"r");
+    ptr = fopen (input_file,"rb");
+
+    // Captura o conteúdo do arquivo
+
     fread(&data, sizeof(char), 100,ptr);    
     printf("\nO conteúdo do arquivo é':\n %s \n", data);
     
+    // Captura o tamanho do arquivo
+
     fseek (ptr, 0, SEEK_END);
     tam = ftell (ptr);
 
     printf("\nTamanho:\n %d \n", tam);
-
     fclose(ptr);
 
-    root_dir.entries[root_dir.free_sectors_list].dir = 0;
-    strcpy(root_dir.entries[root_dir.free_sectors_list].name, simul_file);
-    root_dir.entries[root_dir.free_sectors_list].size_bytes = 2;  
-    root_dir.entries[root_dir.free_sectors_list].sector_start = root_dir.free_sectors_list;
-    
-    strcpy(sector.data,data);
-
-    ds_write_sector(root_dir.free_sectors_list,(void*)&sector, SECTOR_SIZE);
-
+    // Preenche a lista de arquivos e diretórios do root    
+    if(tam < 508){
+        root_dir.entries[root_dir.free_sectors_list].dir = 0;
+        strcpy(root_dir.entries[root_dir.free_sectors_list].name, simul_file);
+        root_dir.entries[root_dir.free_sectors_list].size_bytes = tam;  
+        root_dir.entries[root_dir.free_sectors_list].sector_start = root_dir.free_sectors_list;
+        strcpy(sector.data,data);
+        ds_write_sector(root_dir.free_sectors_list,(void*)&sector, SECTOR_SIZE);
+        root_dir.free_sectors_list++;
+    }    
+    else{
+        while(tamaux < tam){
+            printf("\nTamanho:\n %d \n", tam); //*****
+            tamaux = tamaux + 508;
+            root_dir.entries[root_dir.free_sectors_list].dir = 0;
+            strcpy(root_dir.entries[root_dir.free_sectors_list].name, simul_file);
+            root_dir.entries[root_dir.free_sectors_list].size_bytes = tam;  
+            root_dir.entries[root_dir.free_sectors_list].sector_start = root_dir.free_sectors_list;
+            strcpy(sector.data,data);
+            ds_write_sector(root_dir.free_sectors_list,(void*)&sector, SECTOR_SIZE);            
+            root_dir.free_sectors_list++;
+            
+         }
+     }
+    printf("\n %d \n", root_dir.free_sectors_list);
 	ds_stop();
 	
 	return 0;

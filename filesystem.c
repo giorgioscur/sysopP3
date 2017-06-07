@@ -53,7 +53,8 @@ int fs_create(char* input_file, char* simul_file){
 	int ret, tam, tamaux=0;
     struct root_table_directory root_dir;
 	struct sector_data sector;
-    char data[100];
+	struct table_directory newfile;
+	char data[508], name[25];
     FILE *ptr;
 
 	if ( (ret = ds_init(FILENAME, SECTOR_SIZE, NUMBER_OF_SECTORS, 0)) != 0 ){
@@ -61,47 +62,116 @@ int fs_create(char* input_file, char* simul_file){
 	}
     
     ds_read_sector(0,(void*)&root_dir, SECTOR_SIZE);
-    ds_read_sector(root_dir.free_sectors_list,(void*)&sector, SECTOR_SIZE);
+	ds_read_sector(root_dir.free_sectors_list,(void*)&sector, SECTOR_SIZE);
 
-    ptr = fopen (input_file,"rb");
+    ptr = fopen (input_file,"r+b");
 
-    // Captura o conteúdo do arquivo
-
-    fread(&data, sizeof(char), 100,ptr);    
-    printf("\nO conteúdo do arquivo é':\n %s \n", data);
+	// Busca o primeiro setor livre
+	
+	// int achou = 0 ,k =0;
+	// while(achou == 0){	
+	// 	if(root_dir.entries[k].sector_start == 0){
+	// 		root_dir.free_sectors_list = k;
+	// 		achou = 1;
+	// 	}
+	// 	else 
+	// 		k++;
+	// } 
+	
+	// Captura o conteúdo do arquivo
+    tam = fread(&data, sizeof(char), 503 ,ptr);    
+    printf("\nO conteúdo do arquivo é:\n %s total de caracteres %d \n", data, tam);
     
     // Captura o tamanho do arquivo
 
-    fseek (ptr, 0, SEEK_END);
-    tam = ftell (ptr);
+  	ftell(ptr);
+	fseek(ptr, 0L, SEEK_END);
+	tam = ftell(ptr);
+    printf("\nTotal de Caracteres %d \n",tam);
 
-    printf("\nTamanho:\n %d \n", tam);
-    fclose(ptr);
+	
 
-    // Preenche a lista de arquivos e diretórios do root    
-    if(tam < 508){
-        root_dir.entries[root_dir.free_sectors_list].dir = 0;
-        strcpy(root_dir.entries[root_dir.free_sectors_list].name, simul_file);
+    // Preenche a lista de arquivos e diretórios do root   
+			
+			// Pega o nome do arquivo a ser criado
+				int i=0, barras =0, posicao;
+				while(input_file[i] != NULL){
+					if(input_file[i] == '/'){
+						barras ++;
+						posicao = i + 1;
+					}
+					i++;
+				}
+				i = 0;
+				while(input_file[i] != NULL){
+					name[i] = input_file[posicao];
+					i++;
+					posicao++;
+				}
+	// ----------------------------------------------------
+		
+		root_dir.entries[root_dir.free_sectors_list].dir = 0;
+        strcpy(root_dir.entries[root_dir.free_sectors_list].name, name);
         root_dir.entries[root_dir.free_sectors_list].size_bytes = tam;  
         root_dir.entries[root_dir.free_sectors_list].sector_start = root_dir.free_sectors_list;
-        strcpy(sector.data,data);
+
+		// newfile.entries[root_dir.free_sectors_list].dir = 0;
+        // strcpy(newfile.entries[root_dir.free_sectors_list].name, name);
+        // newfile.entries[root_dir.free_sectors_list].size_bytes = tam;  
+        // newfile.entries[root_dir.free_sectors_list].sector_start = root_dir.free_sectors_list;	
+
+		strcpy(sector.data,data);
         ds_write_sector(root_dir.free_sectors_list,(void*)&sector, SECTOR_SIZE);
-        root_dir.free_sectors_list++;
-    }    
-    else{
-        while(tamaux < tam){
-            printf("\nTamanho:\n %d \n", tam); //*****
-            tamaux = tamaux + 508;
-            root_dir.entries[root_dir.free_sectors_list].dir = 0;
-            strcpy(root_dir.entries[root_dir.free_sectors_list].name, simul_file);
-            root_dir.entries[root_dir.free_sectors_list].size_bytes = tam;  
-            root_dir.entries[root_dir.free_sectors_list].sector_start = root_dir.free_sectors_list;
-            strcpy(sector.data,data);
-            ds_write_sector(root_dir.free_sectors_list,(void*)&sector, SECTOR_SIZE);            
-            root_dir.free_sectors_list++;
+	
+	//	ds_write_sector(root_dir.free_sectors_list,(void*)&newfile, SECTOR_SIZE);	
+
+		root_dir.free_sectors_list++;    //***
+
+		ds_write_sector(0,(void*)&root_dir, SECTOR_SIZE);
+
+	// 	int leqnts, pru;
+	// 	char data2[508];
+	// 	leqnts = tam - 509;
+    //     tamaux = tamaux + 508;
+	// 	strcpy(data, " ");	
+
+    // if(tam > 508){
+    //     while(tamaux < tam){
             
-         }
-     }
+	// 		printf("\nTamanho:\n %d \n", tam); //*****
+            
+	// 		if(leqnts > 508)
+	// 			pru = 509;
+	// 		else
+	// 			pru = leqnts;
+	// 		printf("\n tamaux %d, pru %d \n", tamaux , pru);
+	// 		fseek(ptr, tamaux, SEEK_SET);
+	// 		int ba = fread(&data2, sizeof(char), pru ,ptr);
+
+	// 		printf("\nO conteúdo do arquivo é':\n %s \n número de caracters lidos: %d \n", data2, ba);  //***			
+
+	// 		root_dir.entries[root_dir.free_sectors_list].dir = 0;
+    //         strcpy(root_dir.entries[root_dir.free_sectors_list].name, input_file);
+    //         root_dir.entries[root_dir.free_sectors_list].size_bytes = tam;  
+    //         root_dir.entries[root_dir.free_sectors_list].sector_start = root_dir.free_sectors_list;
+            
+	// 		newfile.entries[root_dir.free_sectors_list].dir = 0;
+    // 	    strcpy(newfile.entries[root_dir.free_sectors_list].name, name);
+    // 	    newfile.entries[root_dir.free_sectors_list].size_bytes = tam;  
+    //  	  	newfile.entries[root_dir.free_sectors_list].sector_start = root_dir.free_sectors_list;	
+
+	// 		strcpy(sector.data,data);
+			
+    //         ds_write_sector(root_dir.free_sectors_list,(void*)&sector, SECTOR_SIZE);            
+    //         ds_write_sector(root_dir.free_sectors_list,(void*)&newfile, SECTOR_SIZE);
+
+	// 		root_dir.free_sectors_list++;
+	// 		leqnts = leqnts - 509;
+            
+    //         tamaux = tamaux + 508;
+    //      }
+    //  }
+	fclose(ptr);
     printf("\n %d \n", root_dir.free_sectors_list);
 	ds_stop();
 	

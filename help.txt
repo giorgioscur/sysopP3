@@ -7,7 +7,7 @@ hexdump simul.fs -- imprime no terminal o arquivo em hexa (depuração)
 	
 		git status -- opcional,para verificar os arquivos que tu mudou.
 		git add [ . ; NOME_DO_ARQUIVO] -- adiciona todos ( "." ) ou um arquivo para a lista de arquivos que devem ser salvos.
-		git commit -m "TEUS_COMENTARIOS_ESPECIFICANDO_QUE_FOI_FEITO" -- salva as alteracoes feitas no seu local.
+		git commit -m "TEU_COMENTARIO_ESPECIFICANDO_QUE_FOI_FEITO" -- salva as alteracoes feitas no seu local.
 		git push -- salva as alteracoes no git/empurra os arquivos alterados para o git.
 	
 	-Comandos Uteis

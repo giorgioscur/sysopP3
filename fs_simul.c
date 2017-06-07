@@ -41,6 +41,7 @@ int main(int argc, char **argv){
 		}
 
         if( !strcmp(argv[1], "-mkdir")){
+			printf("here");
 			fs_mkdir(argv[2]);
 		}
 

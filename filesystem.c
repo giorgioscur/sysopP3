@@ -239,80 +239,83 @@ int fs_ls(char *dir_path){
  * @return 0 on success.
  */
 int fs_mkdir(char* directory_path){
-	// int ret, i, success;
-	// struct root_table_directory root_dir;
-	// struct sector_data sector;
-	// struct table_directory directory;
-	// char* nome;
+	int ret, i, success;
+	struct root_table_directory root_dir;
+	struct sector_data sector;
+	struct table_directory directory;
+	char* nome;
 
-	// /* Initialize Virtual Memory */
-	// if ( (ret = ds_init(FILENAME, SECTOR_SIZE, NUMBER_OF_SECTORS, 0)) != 0 ){
-	// 	return ret;
-	// }
+	/* Initialize Virtual Memory */
+	if ( (ret = ds_init(FILENAME, SECTOR_SIZE, NUMBER_OF_SECTORS, 0)) != 0 ){
+		return ret;
+	}
 	
-	// /* Code to create a new directory. */
-	// ds_read_sector(0,(void*)&root_dir, SECTOR_SIZE); //Read root dir
-	
-	// /* Code to travel to directory*/
-	// if( (ret = change_directory(directory_path,(void*)&directory, &nome)) != 0) {
-	// 	for(i= 0;i<16;i++) {
-	// 		if(directory.entries[i].sector_start == 0) {
-	// 			directory.entries[i].dir = 1;
-	// 			directory.entries[i].name = *nome;
-	// 			directory.entries[i].size_bytes = 0;
-	// 			directory.entries[i].sector_start = root_dir.free_sectors_list;
-	// 			success = 1;
-	// 		}
-	// 	}
-	// } else {
-	// 	for(i= 0;i<15;i++) {
-	// 		if(root_dir.entries[i].sector_start == 0) {
-	// 			root_dir.entries[i].dir = 1;
-	// 			root_dir.entries[i].name = *nome;
-	// 			root_dir.entries[i].size_bytes = 0;
-	// 			root_dir.entries[i].sector_start = root_dir.free_sectors_list;
-	// 			success = 1;
-	// 		}
-	// 	}
-	// }
-	// if(success){
-	// 	root_dir.free_sectors_list++
-	// } else {
-	// 	printf("Error");
-	// }
+	/* Code to create a new directory. */
+	ds_read_sector(0,(void*)&root_dir, SECTOR_SIZE); //Read root dir
+	directory = change_directory(directory_path);
+	/* Code to travel to directory*/
+	if() {
+		printf("%s",nome);
+		for(i= 0;i<16;i++) {
+			if(directory.entries[i].sector_start == 0) {
+				directory.entries[i].dir = 1;
+				strcpy(directory.entries[i].name, nome);
+				directory.entries[i].size_bytes = 0;
+				directory.entries[i].sector_start = root_dir.free_sectors_list;
+				success = 1;
+				break;
+			}
+		}
+	} else {
+		for(i= 0;i<15;i++) {
+			if(root_dir.entries[i].sector_start == 0) {
+				root_dir.entries[i].dir = 1;
+				strcpy(root_dir.entries[i].name, nome);
+				root_dir.entries[i].size_bytes = 0;
+				root_dir.entries[i].sector_start = root_dir.free_sectors_list;
+				success = 1;
+				break;
+			}
+		}
+	}
+	if(success){
+		root_dir.free_sectors_list++;
+	} else {
+		printf("Error");
+	}
 
-	// ds_write_sector(0, (void*)&root_dir, SECTOR_SIZE); // save root dir
-	// ds_stop();
+	ds_write_sector(0, (void*)&root_dir, SECTOR_SIZE); // save root dir
+	ds_stop();
 	
-	// return 0;
+	return 0;
 }
 
-int change_directory(char* directory_path, void* directory_r, char *nome) { //Tem que testar isso, ficou uma confusao esses ponteiros
-	// char* pch = strtok(directory_path, "/");
-	// char* name;
-	// struct root_table_directory root_dir;
-	// struct table_directory directory;
+struct table_directory change_directory(char* directory_path) { //Tem que testar isso, ficou uma confusao esses ponteiros
+	char* pch = strtok(directory_path, "/");
+	struct root_table_directory root_dir;
+	struct table_directory directory;
+	int i;
 
-	// ds_read_sector(0,(void*)&root_dir, SECTOR_SIZE); //Read root dir
-	// for(i=0; i<15; i++) {
-	// 	if (strcmp(root_dir.entries[i].name, pch) == 0) { //Isso ta meio feio, deve ter como fazer mais bonito
-	// 		ds_read_sector(root_dir.entries[i].sector_start,(void*)&directory,SECTOR_SIZE);
+	ds_read_sector(0,(void*)&root_dir, SECTOR_SIZE); //Read root dir
+	for(i=0; i<15; i++) {
+		if (strcmp(root_dir.entries[i].name, pch) == 0) { //Isso ta meio feio, deve ter como fazer mais bonito
+			ds_read_sector(root_dir.entries[i].sector_start,(void*)&directory,SECTOR_SIZE);
 
-	// 		do{
-	// 			for(i=0; i<16; i++) {
-	// 				if(strcmp(directory.entries[i].name,pch) == 0) {
-	// 					ds_read_sector(directory.entries[i].sector_start,(void*)&directory,SECTOR_SIZE);
-	// 					name = pch;
-	// 				}
-	// 			}
-	// 		} while( (pch = strtok(NULL, "/")) != NULL);
+			do{
+				for(i=0; i<16; i++) {
+					if(strcmp(directory.entries[i].name,pch) == 0) {
+						ds_read_sector(directory.entries[i].sector_start,(void*)&directory,SECTOR_SIZE);
+						name = pch;
+					}
+				}
+			} while( (pch = strtok(NULL, "/")) != NULL);
 
-	// 		*directory_r = directory;
-	// 		*nome = name;
-	// 		return 1;
-	// 	}
-	// 	return 0; 
-	// } 
+			directory_r = directory;
+			nome = name;
+			return 1;
+		}
+		return 0; 
+	} 
 	
 }
 

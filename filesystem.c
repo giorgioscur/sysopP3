@@ -221,14 +221,27 @@ int fs_ls(char *dir_path){
 
 	if(!strcmp(dir_path,"/")) {
 		printf("/\n");
-		for(i=0;i<15;i++) {
+		for(i=0;i<14;i++) {
 			if(root_dir.entries[i].sector_start != 0) {
-				printf("  -%s\n",root_dir.entries[i].name);
+				if(root_dir.entries[i].dir) {
+					printf("  /%s\n",root_dir.entries[i].name);
+				} else {
+					printf("  -%s\n",root_dir.entries[i].name);
+				}
 			}
 		}
 	}else{ 
 		printf("%s", dir_path);
 		directory = change_directory(dir_path);
+		for(i=0;i<15;i++) {
+			if(directory.entries[i].sector_start != 0) {
+				if(directory.entries[i].dir) {
+					printf("  /%s\n",directory.entries[i].name);
+				} else {
+					printf("  -%s\n",directory.entries[i].name);
+				}
+			}
+		}
 	}
 	
 	ds_stop();
@@ -291,6 +304,7 @@ int fs_mkdir(char* directory_path){
 		printf("Error");
 	}
 
+	ds_write_sector(directory.entries[i].sector_start, (void*)&directory, SECTOR_SIZE); 
 	ds_write_sector(0, (void*)&root_dir, SECTOR_SIZE); // save root dir
 	ds_stop();
 	
@@ -305,7 +319,7 @@ struct table_directory change_directory(char* directory_path) {
 
 	ds_read_sector(0,(void*)&root_dir, SECTOR_SIZE); //Read root dir
 	for(i=0; i<15; i++) {
-		if (strcmp(root_dir.entries[i].name, pch) == 0) { //Isso ta meio feio, deve ter como fazer mais bonito
+		if (strcmp(root_dir.entries[i].name, pch) == 0) { 
 			ds_read_sector(root_dir.entries[i].sector_start,(void*)&directory,SECTOR_SIZE);
 
 			do{

@@ -208,12 +208,28 @@ int fs_del(char* simul_file){
  * @return 0 on success.
  */
 int fs_ls(char *dir_path){
-	int ret;
+	int ret,i;
+	struct root_table_directory root_dir;
+	struct table_directory directory;
+
 	if ( (ret = ds_init(FILENAME, SECTOR_SIZE, NUMBER_OF_SECTORS, 0)) != 0 ){
 		return ret;
 	}
 	
 	/* Write the code to show files or directories. */
+	ds_read_sector(0,(void*)&root_dir, SECTOR_SIZE); //Read root dir
+
+	if(!strcmp(dir_path,"/")) {
+		printf("/\n");
+		for(i=0;i<15;i++) {
+			if(root_dir.entries[i].sector_start != 0) {
+				printf("  -%s\n",root_dir.entries[i].name);
+			}
+		}
+	}else{ 
+		printf("%s", dir_path);
+		directory = change_directory(dir_path);
+	}
 	
 	ds_stop();
 	
@@ -239,6 +255,7 @@ int fs_mkdir(char* directory_path){
 	
 	/* Code to create a new directory. */
 	ds_read_sector(0,(void*)&root_dir, SECTOR_SIZE); //Read root dir
+
 	while(pch != NULL) { 
 		nome = pch;
 		pch =  strtok(NULL, "/");
@@ -301,7 +318,8 @@ struct table_directory change_directory(char* directory_path) {
 
 			return directory;
 		}
-	} 
+	}
+	printf("Erro ao achar diretorio, Verifique se o caminho esta certo");
 	directory = empty;
 	return directory; 
 }

@@ -226,11 +226,11 @@ int fs_ls(char *dir_path){
  * @return 0 on success.
  */
 int fs_mkdir(char* directory_path){
-	int ret, i, success;
+	int ret, i = 0, success =0;
 	struct root_table_directory root_dir;
-	struct sector_data sector;
 	struct table_directory directory;
 	char* nome;
+	char* pch = strtok(directory_path, "/");
 
 	/* Initialize Virtual Memory */
 	if ( (ret = ds_init(FILENAME, SECTOR_SIZE, NUMBER_OF_SECTORS, 0)) != 0 ){
@@ -239,9 +239,12 @@ int fs_mkdir(char* directory_path){
 	
 	/* Code to create a new directory. */
 	ds_read_sector(0,(void*)&root_dir, SECTOR_SIZE); //Read root dir
-
-
-	if(strcmp(directory_path, "/") != 0) {
+	while(pch != NULL) { 
+		nome = pch;
+		pch =  strtok(NULL, "/");
+		i++;
+	}
+	if(i > 1) {
 		directory = change_directory(directory_path);
 		for(i= 0;i<16;i++) {
 			if(directory.entries[i].sector_start == 0) {
@@ -406,13 +409,13 @@ struct root_table_directory root_dir;
 }
 
 void get_name(char *name, char* simul_file){
-int i=0, barras =0, posicao;
+	int i=0, barras =0, posicao;
 	while(simul_file[i] != NULL){
 		if(simul_file[i] == '/'){
 			barras ++;
 			posicao = i + 1;
 		}
-	i++;
+		i++;
 	}
 	printf("\n BARRAS: %d" ,barras);
 	if(barras == 0)    /* Tirar e trocar o input_file pelo simul_file , sempre haverá barra no nome */
@@ -420,27 +423,27 @@ int i=0, barras =0, posicao;
 	i = 0;
 	printf("\n BARRAS: %d" ,i);
 	while(simul_file[i] != NULL){
-	name[i] = simul_file[posicao];
-	i++;
-	posicao++;
+		name[i] = simul_file[posicao];
+		i++;
+		posicao++;
 	}
 
 }
 
 int get_next_bar(char *name, char* simul_file, int nm_bars){
-char* ptr;
-char* str;
-char nameaux[50];
-int i = 0, cont = 1;
-str = simul_file;
-// if(nm_bars == 1){
-// 	ptr = strtok(str,"/");
-// 	strcpy(name,ptr);
-// return 1;
-// }
-ptr = strtok(str,"/");
-strcpy(nameaux,ptr);
-strcat(nameaux,"0");
+	char* ptr;
+	char* str;
+	char nameaux[50];
+	int i = 0, cont = 1;
+	str = simul_file;
+	// if(nm_bars == 1){
+	// 	ptr = strtok(str,"/");
+	// 	strcpy(name,ptr);
+	// return 1;
+	// }
+	ptr = strtok(str,"/");
+	strcpy(nameaux,ptr);
+	strcat(nameaux,"0");
     while (ptr != NULL){
         printf ("%s\n",ptr);
         ptr = strtok (NULL, "/");
@@ -449,14 +452,14 @@ strcat(nameaux,"0");
 			strcat(nameaux,"0");}
 		cont++;
     }
-printf("\n b %s",nameaux);
-if(nm_bars == 1)
-{
-	for(i=0;i<cont;i++){
-		
+	printf("\n b %s",nameaux);
+	if(nm_bars == 1)
+	{
+		for(i=0;i<cont;i++){
+			
 
+		}
 	}
-}
 
 }
 

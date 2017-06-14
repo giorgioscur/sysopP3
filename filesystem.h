@@ -49,7 +49,7 @@ int fs_ls(char *dir_path);
 int fs_mkdir(char* directory_path);
 int fs_rmdir(char *directory_path);
 int fs_free_map(char *log_f);
-int change_directory(char* directory_path, void* directory_r, char* nome);
+struct table_directory change_directory(char* directory_path);
 
 int next_free_sector();
 void get_name(char* data, char* simul_file);

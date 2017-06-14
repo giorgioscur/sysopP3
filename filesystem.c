@@ -241,7 +241,7 @@ int fs_mkdir(char* directory_path){
 	ds_read_sector(0,(void*)&root_dir, SECTOR_SIZE); //Read root dir
 
 
-	if(0) {
+	if(strcmp(directory_path, "/") != 0) {
 		directory = change_directory(directory_path);
 		for(i= 0;i<16;i++) {
 			if(directory.entries[i].sector_start == 0) {
@@ -303,11 +303,6 @@ struct table_directory change_directory(char* directory_path) {
 	return directory; 
 }
 
-/**
- * @brief Remove directory from the simulated filesystem.
- * @param directory_path directory path.
- * @return 0 on success.
- */
 int fs_rmdir(char *directory_path){
 	int ret;
 	if ( (ret = ds_init(FILENAME, SECTOR_SIZE, NUMBER_OF_SECTORS, 0)) != 0 ){

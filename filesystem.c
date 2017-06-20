@@ -226,7 +226,7 @@ int fs_ls(char *dir_path){
 				if(root_dir.entries[i].dir) {
 					printf("  d %s\n",root_dir.entries[i].name);
 				} else {
-					printf("  f %s                      %u\n",root_dir.entries[i].name,root_dir.entries[i].size_bytes);
+					printf("  f %s            %u bits\n",root_dir.entries[i].name,root_dir.entries[i].size_bytes);
 				}
 			}
 		}
@@ -238,7 +238,7 @@ int fs_ls(char *dir_path){
 				if(directory.entries[i].dir) {
 					printf("  d %s\n",directory.entries[i].name);
 				} else {
-					printf("  f %s                      %u\n",directory.entries[i].name, directory.entries[i].size_bytes);
+					printf("  f %s           %u bits\n",directory.entries[i].name, directory.entries[i].size_bytes);
 				}
 			}
 		}

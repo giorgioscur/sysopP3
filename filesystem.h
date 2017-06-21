@@ -51,7 +51,5 @@ int fs_rmdir(char *directory_path);
 int fs_free_map(char *log_f);
 int change_directory(char* directory_path);
 
-int next_free_sector();
+int next_free_sector(int NS);
 void get_name(char* data, char* simul_file);
-int get_next_bar(char* name,char* simul_file, int nm_bars);
-int set_first(int setor_livre, char* name, int tam);

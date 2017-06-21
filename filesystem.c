@@ -50,11 +50,16 @@ int fs_format(){
  * @return 0 on success.
  */
 int fs_create(char* input_file, char* simul_file){
-	int ret, tam, tamaux=0, k;
+	int ret, tam, tamaux=0, i=0,k,NS,j,dirAddress;
     struct root_table_directory root_dir;
 	struct sector_data sector;
-	unsigned char data[508];
+	struct table_directory directory = {0}, newDir  = {0};
+	char *data;
+	data = malloc (508 * sizeof (char));
 	char name[50];
+	char * str = (char *) malloc(100);
+	strcpy(str,simul_file);
+	char* pch = strtok(simul_file, "/");
     FILE *ptr;
 
 	if ( (ret = ds_init(FILENAME, SECTOR_SIZE, NUMBER_OF_SECTORS, 0)) != 0 ){
@@ -62,87 +67,98 @@ int fs_create(char* input_file, char* simul_file){
 	}
     
     ds_read_sector(0,(void*)&root_dir, SECTOR_SIZE);
-	ds_read_sector(root_dir.free_sectors_list,(void*)&sector, SECTOR_SIZE);
 
-    ptr = fopen (input_file,"r+b");
+    ptr = fopen (input_file,"rb");
 
-	// Busca o primeiro setor livre
-	root_dir.free_sectors_list = next_free_sector();
+	//Verifica se deve escrever no root ou não
+	while(pch != NULL) { 
+		pch =  strtok(NULL, "/");
+		i++;
+	}
+
     
     // Captura o tamanho do arquivo
 
   	ftell(ptr);
 	fseek(ptr, 0L, SEEK_END);
 	tam = ftell(ptr);
-    printf("\nTotal de Caracteres %d \n",tam);
 	fseek(ptr, 0, SEEK_SET);
-
-	// Captura o conteúdo do arquivo
-	printf("\n%d\n", tam);
-	if(tam>=508)
-		k = fread(&data, sizeof(char), 509 ,ptr);  // ******* DEVE LER 508 ; CONSERTAR //
-	else if(tam < 508)
-		k = fread(&data,sizeof(char), tam-1, ptr);
-    printf("\nO conteúdo do arquivo é:\n %s total de caracteres lidos %d \n", data, k);
 			
 	// Pega o nome do arquivo a ser criado
-		get_name(name, simul_file);
-		printf("\n name:%s \n", name);
-	// ----------------------------------------------------
+		get_name(name, str);
 
 	// Preenche o primeiro bloco
-	//	root_dir.free_sectors_list = set_first(root_dir.free_sectors_list, name, tam);
-		root_dir.entries[root_dir.free_sectors_list].dir = 0;
-		strcpy(root_dir.entries[root_dir.free_sectors_list].name, name);
-		root_dir.entries[root_dir.free_sectors_list].size_bytes = tam;  
-		root_dir.entries[root_dir.free_sectors_list].sector_start = root_dir.free_sectors_list;
-
-		strcpy(sector.data,data);
-		ds_write_sector(root_dir.free_sectors_list,(void*)&sector, SECTOR_SIZE);
-			
-		ds_write_sector(0,(void*)&root_dir, SECTOR_SIZE);
-		root_dir.free_sectors_list = next_free_sector();
-		ds_write_sector(0,(void*)&root_dir, SECTOR_SIZE);
-		
-
-	int falta_ler, sera_lido;
-	char data2[508];
-	falta_ler = tam - 508;
-    tamaux = tamaux + 508;
-	strcpy(data, " ");	
-	root_dir.free_sectors_list = next_free_sector();
+	printf("\n a %d", i);
+	if(i == 1){
+		for (j = 0; j < 15; j++){
+			if (root_dir.entries[j].sector_start == 0){
+				root_dir.entries[j].dir = 0;
+				strcpy(root_dir.entries[j].name, name);
+				root_dir.entries[j].size_bytes = tam; 
+				root_dir.entries[j].sector_start = root_dir.free_sectors_list;
+				NS = root_dir.free_sectors_list;
+				ds_read_sector(NS,(void*)&sector, SECTOR_SIZE);
+				break;
+			}	
+		}		
+	} else {
+		dirAddress = change_directory(str);
+		ds_read_sector(dirAddress,(void*)&directory, SECTOR_SIZE);
+		for (j = 0; j < 15; j++){
+			if(directory.entries[j].sector_start == 0) {
+				directory.entries[j].dir = 0;
+				strcpy(directory.entries[j].name, name);
+				directory.entries[j].size_bytes = tam;
+				directory.entries[j].sector_start = root_dir.free_sectors_list;
+				
+				ds_write_sector(dirAddress, (void*)&directory, SECTOR_SIZE); 
+				ds_write_sector(directory.entries[j].sector_start, (void*)&newDir, SECTOR_SIZE);
+				
+				NS = root_dir.free_sectors_list;
+				ds_read_sector(NS,(void*)&sector, SECTOR_SIZE);
+				break;
+			}
+		}
+	}
+	printf("\nteste\n");
+	int falta_ler, sera_lido, ANS, NNS;
+	falta_ler = tam;	
+	
     if(tam > 508){
-    	while(tamaux < tam){  
-			
-			printf("\nTamanho:\n %d \n", tam); //*****
-            
+    	while(tamaux < tam){   
 			if(falta_ler > 508)
 	 			sera_lido = 508;
 			else
 				sera_lido = falta_ler;
-			printf("\n tamaux %d, sera_lido %d \n", tamaux , sera_lido);
+				
+			char *data2;
+			data2 = malloc (sera_lido * sizeof (char));
+
 			fseek(ptr, tamaux, SEEK_SET);
-			int ba = fread(&data2, sizeof(char), sera_lido ,ptr);
+			fread(data2, sizeof(char), sera_lido ,ptr);		
+			for(k=0; k<508; k++)
+				sector.data[k] = data2[k];	
+			sector.next_sector = ANS;
+			//ds_read_sector(NS,(void*)&sector, SECTOR_SIZE);
 
-			printf("\nO conteúdo do arquivo é':\n %s \n número de caracters lidos: %d \n", data2, ba);  //***			
-
-			root_dir.entries[root_dir.free_sectors_list].dir = 0;
-			strcpy(root_dir.entries[root_dir.free_sectors_list].name, name);
-			root_dir.entries[root_dir.free_sectors_list].size_bytes = tam;  
-			root_dir.entries[root_dir.free_sectors_list].sector_start = root_dir.free_sectors_list;
-
-			strcpy(sector.data,data);
-			
-            ds_write_sector(root_dir.free_sectors_list,(void*)&sector, SECTOR_SIZE);    
-
-            ds_write_sector(0,(void*)&root_dir, SECTOR_SIZE);
-			root_dir.free_sectors_list = next_free_sector();
-			ds_write_sector(0,(void*)&root_dir, SECTOR_SIZE);
-
+			//  ANS = next_free_sector();
+			 printf("\n NS: %d", NS);
+			ds_write_sector(NS,(void*)&sector, SECTOR_SIZE);
+			NNS = NS;
+			ANS = NS+1;
+			printf("\nANS: %d",ANS);
+			ds_read_sector(ANS,(void*)&sector, SECTOR_SIZE);
+			NS = ANS;
 			falta_ler = falta_ler - 508;
-            tamaux = tamaux + 508;
-         }
+			tamaux = tamaux + 508;
+       }
+	   	printf("\nNNS: %d", NNS);
+		 ds_read_sector(NNS,(void*)&sector, SECTOR_SIZE);
+		 sector.next_sector = 0;
+		 ds_write_sector(NNS,(void*)&sector, SECTOR_SIZE);
      }
+	 root_dir.free_sectors_list = NS;
+	ds_write_sector(0,(void*)&root_dir, SECTOR_SIZE);
 
 	fclose(ptr);
     printf("\n %d \n", root_dir.free_sectors_list);
@@ -158,44 +174,166 @@ int fs_create(char* input_file, char* simul_file){
  * @return 0 on success.
  */
 int fs_read(char* output_file, char* simul_file){
-	int ret, achou = 0;
+	int ret, testa, i,j=0, tamanho, tam2, dirAddress, B=0, ind;
 	char name[50];
 	struct root_table_directory root_dir;
 	struct sector_data sector;
+	struct table_directory directory;
+	char* pch = strtok(simul_file, "/");
+	FILE *fp;
 
+	char *data;
+	data = malloc (508 * sizeof (char));
 	if ( (ret = ds_init(FILENAME, SECTOR_SIZE, NUMBER_OF_SECTORS, 0)) != 0 ){
 		return ret;
 	}
-	get_next_bar(name, simul_file,1);
-	printf("\n %s", name);
+
+	while(pch != NULL) { 
+		pch =  strtok(NULL, "/");
+		i++;
+	}
+
+	ds_read_sector(0,(void*)&root_dir, SECTOR_SIZE);
+	get_name(name,simul_file);
+	printf("\n %s\n", name);
+
+	fp = fopen (output_file,"wb");
+	if(i == 1){
+		printf("\n teste \n");
+		for(j=1; j<15; j++)
+		{
+			testa = strcmp(root_dir.entries[j].name,name);
+			printf("\nname: %s testa %d\n",root_dir.entries[j].name, testa);
+			if(testa == 0){
+				ind = j;
+				while(B==0)
+				ds_read_sector(ind,(void*)&sector, SECTOR_SIZE);		
+				printf("\n ACHEI \n");
+				strcpy(data,sector.data);				
+				printf("\n %s  \n", data);
+				fwrite(data,sizeof(char),508,fp);
+				memset(data, 0, 508);
+				if(sector.next_sector == 0)
+					B = 1;
+				ind = sector.next_sector;
+			}
+		}
+	} else{
+		dirAddress = change_directory(simul_file);
+		for(j=0; j<15; j++)
+		{
+		
+		}
+	}
+	
+	
+	// get_next_bar(name, simul_file,1);
+	// printf("\n %s", name);
 	// get_next_bar(name, simul_file,2);
 	// printf("\n %s", name);
 	// get_next_bar(name, simul_file,3);
 	// printf("\n %s", name);
-	ds_read_sector(0,(void*)&root_dir, SECTOR_SIZE);
+	// ds_read_sector(0,(void*)&root_dir, SECTOR_SIZE);
 	
-	while(achou == 0){
-	//	if(name)
-	achou =1;
-	}
-	
+	// while(achou == 0){
+	// //	if(name)
+	// achou =1;
+	// }
+	fclose(fp);
 	ds_stop();
 	
 	return 0;
 }
+
 
 /**
  * @brief Delete file from file system.
  * @param simul_file Source file path.
  * @return 0 on success.
  */
-int fs_del(char* simul_file){
-	int ret;
+int fs_del(char* directory_path){ //NAO TESTEI AINDA, mas ta compilando isso q vale
+	int ret, i=0, j=0, dirAddress,success, occupiedSector;
+	char* nome = (char *) malloc(100);
+	char* pch;
+	struct root_table_directory root_dir;
+	struct table_directory directory;
+	struct sector_data sector, sectorDel;
+	char * str = (char *) malloc(100);
+
 	if ( (ret = ds_init(FILENAME, SECTOR_SIZE, NUMBER_OF_SECTORS, 0)) != 0 ){
 		return ret;
 	}
 	
-	/* Write the code delete a file from the simulated filesystem. */
+	strcpy(str,directory_path);
+	pch = strtok(directory_path, "/");
+
+	/* Write the code to delete a directory. */
+	ds_read_sector(0,(void*)&root_dir, SECTOR_SIZE); //Read root dir
+
+	while(pch != NULL) { 
+		nome = pch;
+		pch =  strtok(NULL, "/");
+		i++;
+	}
+	if(i > 1) {
+
+		dirAddress = change_directory(str);
+		ds_read_sector(dirAddress,(void*)&directory, SECTOR_SIZE);
+		for(i= 0;i<16;i++) {
+			if(!strcmp(directory.entries[i].name,nome)) {
+
+				memset(&sector, 0, SECTOR_SIZE);
+				ds_read_sector(directory.entries[i].sector_start,(void*)&sectorDel, SECTOR_SIZE); //Le o primeiro da fila a ser deletado
+				occupiedSector = directory.entries[i].sector_start; //Guarda o numero do setor do primeiro da fila
+				while(sectorDel.next_sector != 0){ // Enquanto o proximo setor nao for o ultimo
+					sector.next_sector = root_dir.free_sectors_list;	//Cria o link entre o setor a ser liberado e o antigo free
+					root_dir.free_sectors_list = occupiedSector;		//O free_sectors_list vira o o setor a ser liberado
+					occupiedSector = sectorDel.next_sector;				//Guarda o endereco do proximo da fila
+					ds_write_sector(root_dir.free_sectors_list,(void*)&sector, SECTOR_SIZE); //Escreve o setor vazio, efetivamente apagando o setor
+					ds_read_sector(sectorDel.next_sector,(void*)&sectorDel, SECTOR_SIZE);	//Pega o proximo setor ocupado da fila
+				}
+				sector.next_sector = root_dir.free_sectors_list;	//Link do ultimo setor a ser liberado
+				root_dir.free_sectors_list = occupiedSector;		//O free_sectors_list vira o o setor a ser liberado
+				ds_write_sector(root_dir.free_sectors_list,(void*)&sector, SECTOR_SIZE); //Escreve o setor vazio, efetivamente apagando o setor
+				directory.entries[i].sector_start = 0; // "deleta" da lista do diretorio
+				ds_write_sector(dirAddress, (void*)&directory, SECTOR_SIZE); //Salva o diretorio
+				success = 1;
+				break;
+			}
+		}
+
+	} else { 
+		for(i= 0;i<15;i++) {
+			if(!strcmp(root_dir.entries[i].name,nome)) {
+				ds_read_sector(root_dir.entries[i].sector_start,(void*)&sectorDel, SECTOR_SIZE);
+				occupiedSector = root_dir.entries[i].sector_start; //Guarda o numero do setor do primeiro da fila
+				while(sectorDel.next_sector != 0){ // Enquanto o proximo setor nao for o ultimo
+					sector.next_sector = root_dir.free_sectors_list;	//Cria o link entre o setor a ser liberado e o antigo free
+					root_dir.free_sectors_list = occupiedSector;		//O free_sectors_list vira o o setor a ser liberado
+					occupiedSector = sectorDel.next_sector;				//Guarda o endereco do proximo da fila
+					ds_write_sector(root_dir.free_sectors_list,(void*)&sector, SECTOR_SIZE); //Escreve o setor vazio, efetivamente apagando o setor
+					ds_read_sector(sectorDel.next_sector,(void*)&sectorDel, SECTOR_SIZE);	//Pega o proximo setor ocupado da fila
+				}
+				sector.next_sector = root_dir.free_sectors_list;	//Link do ultimo setor a ser liberado
+				root_dir.free_sectors_list = occupiedSector;		//O free_sectors_list vira o o setor a ser liberado
+				ds_write_sector(root_dir.free_sectors_list,(void*)&sector, SECTOR_SIZE); //Escreve o setor vazio, efetivamente apagando o setor
+				root_dir.entries[i].sector_start = 0; //"deleta" da lista do diretorio
+				success = 1;
+				break;
+			}
+		}
+	}
+
+	if(success) { 
+		printf("Arquivo excluido com sucesso\n");
+
+	} else {
+		printf("Verifique se o caminho fornecido esta correto");
+	}
+
+	ds_write_sector(0, (void*)&root_dir, SECTOR_SIZE); // save root dir
+
+
 	
 	ds_stop();
 	
@@ -208,7 +346,7 @@ int fs_del(char* simul_file){
  * @return 0 on success.
  */
 int fs_ls(char *dir_path){
-	int ret,i;
+	int ret,i, dirAddress;
 	struct root_table_directory root_dir;
 	struct table_directory directory;
 
@@ -232,7 +370,8 @@ int fs_ls(char *dir_path){
 		}
 	}else{ 
 		printf("%s\n", dir_path);
-		directory = change_directory(dir_path);
+		dirAddress = change_directory(dir_path);
+		ds_read_sector(dirAddress,(void*)&directory, SECTOR_SIZE);
 		for(i=0;i<15;i++) {
 			if(directory.entries[i].sector_start != 0) {
 				if(directory.entries[i].dir) {
@@ -245,7 +384,7 @@ int fs_ls(char *dir_path){
 	}
 	
 	ds_stop();
-	
+
 	return 0;
 }
 
@@ -255,11 +394,14 @@ int fs_ls(char *dir_path){
  * @return 0 on success.
  */
 int fs_mkdir(char* directory_path){
-	int ret, i = 0, success =0;
+	int ret, i = 0, success =0, dirAddress;
 	struct root_table_directory root_dir;
-	struct table_directory directory;
+	struct table_directory directory = {0}, newDir  = {0};
 	char* nome;
-	char* pch = strtok(directory_path, "/");
+	struct sector_data sector;
+	char* pch;
+	char * str = (char *) malloc(100);
+
 
 	/* Initialize Virtual Memory */
 	if ( (ret = ds_init(FILENAME, SECTOR_SIZE, NUMBER_OF_SECTORS, 0)) != 0 ){
@@ -267,15 +409,21 @@ int fs_mkdir(char* directory_path){
 	}
 	
 	/* Code to create a new directory. */
-	
 	ds_read_sector(0,(void*)&root_dir, SECTOR_SIZE); //Read root dir
+	
+	strcpy(str,directory_path);
+
+	pch = strtok(directory_path, "/");
+
 	while(pch != NULL) { 
 		nome = pch;
 		pch =  strtok(NULL, "/");
 		i++;
 	}
+
 	if(i > 1) {
-		directory = change_directory(directory_path);
+		dirAddress = change_directory(str);
+		ds_read_sector(dirAddress,(void*)&directory, SECTOR_SIZE);
 		for(i= 0;i<16;i++) {
 			if(directory.entries[i].sector_start == 0) {
 				directory.entries[i].dir = 1;
@@ -283,8 +431,10 @@ int fs_mkdir(char* directory_path){
 				directory.entries[i].size_bytes = 0;
 				directory.entries[i].sector_start = root_dir.free_sectors_list;
 				success = 1;
-				ds_write_sector(directory.entries[i].sector_start, (void*)&directory, SECTOR_SIZE); 
-
+				ds_read_sector(directory.entries[i].sector_start,(void*)&sector, SECTOR_SIZE);
+				root_dir.free_sectors_list = sector.next_sector;
+				ds_write_sector(dirAddress, (void*)&directory, SECTOR_SIZE); 
+				ds_write_sector(directory.entries[i].sector_start, (void*)&newDir, SECTOR_SIZE);
 				break;
 			}
 		}
@@ -296,12 +446,16 @@ int fs_mkdir(char* directory_path){
 				root_dir.entries[i].size_bytes = 0;
 				root_dir.entries[i].sector_start = root_dir.free_sectors_list;
 				success = 1;
+				ds_read_sector(root_dir.entries[i].sector_start,(void*)&sector, SECTOR_SIZE);
+				root_dir.free_sectors_list = sector.next_sector;
+				ds_write_sector(root_dir.entries[i].sector_start, (void*)&newDir, SECTOR_SIZE);
 				break;
 			}
 		}
 	}
+
 	if(success){
-		root_dir.free_sectors_list++;
+		printf("Diretorio criado com sucesso\n");
 	} else {
 		printf("Error");
 	}
@@ -312,90 +466,117 @@ int fs_mkdir(char* directory_path){
 	return 0;
 }
 
-struct table_directory change_directory(char* directory_path) { 
+int change_directory(char* directory_path) { 
 	char* pch = strtok(directory_path, "/");
 	struct root_table_directory root_dir;
-	struct table_directory directory, empty = {0};
-	int i;
+	struct table_directory directory;
+	int i, sectorAddress;
 
 	ds_read_sector(0,(void*)&root_dir, SECTOR_SIZE); //Read root dir
-	for(i=0; i<15; i++) {
-		if (strcmp(root_dir.entries[i].name, pch) == 0) { 
-			ds_read_sector(root_dir.entries[i].sector_start,(void*)&directory,SECTOR_SIZE);
 
+	for(i=0; i<15; i++) {
+		if (!strcmp(root_dir.entries[i].name, pch) && root_dir.entries[i].sector_start != 0 && root_dir.entries[i].dir) { 
+			ds_read_sector(root_dir.entries[i].sector_start,(void*)&directory,SECTOR_SIZE);
+			sectorAddress = root_dir.entries[i].sector_start;
 			while( (pch = strtok(NULL, "/")) != NULL) {
 				for(i=0; i<16; i++) {
-					if(strcmp(directory.entries[i].name,pch) == 0) {
-						ds_read_sector(directory.entries[i].sector_start,(void*)&directory,SECTOR_SIZE);
+					if((!strcmp(directory.entries[i].name,pch) == 0) && directory.entries[i].sector_start != 0 && directory.entries[i].dir) {
+						sectorAddress = directory.entries[i].sector_start;
 					}
 				}
-			} ;
+			}
 
-			return directory;
+			return sectorAddress;
 		}
 	}
-	printf("Erro ao achar diretorio, Verifique se o caminho esta certo");
-	directory = empty;
-	return directory; 
+	printf("Erro ao achar diretorio, Verifique se o caminho esta certo\n");
+	return 0; 
 }
 
 int fs_rmdir(char *directory_path){ //// NEED TO TEST AHHHH
-	int ret, i=0, k=0;
-	char* pch, nome[20];
+	int ret, i=0, j=0,dirAddress,success;
+	char* nome = (char *) malloc(100);
+	char* pch;
 	struct root_table_directory root_dir;
-	struct table_directory directory;
+	struct table_directory directory, directoryDel;
+	struct sector_data sector;
+	char * str = (char *) malloc(100);
+	char* fatherDirPath;
+
 	if ( (ret = ds_init(FILENAME, SECTOR_SIZE, NUMBER_OF_SECTORS, 0)) != 0 ){
 		return ret;
 	}
+
+	strcpy(str,directory_path);
+
 	pch = strtok(directory_path, "/");
+
 	/* Write the code to delete a directory. */
 	ds_read_sector(0,(void*)&root_dir, SECTOR_SIZE); //Read root dir
 
 	while(pch != NULL) { 
-		nome[i] = pch;
+		nome = pch;
 		pch =  strtok(NULL, "/");
 		i++;
 	}
+
 	if(i > 1) {
-		do {
-			if(!k) { 
-				for(i=0;i<15;i++) {
-					if(!strcmp(root_dir.entries[i].name, nome[k])) {
-						ds_read_sector(root_dir.entries[i].sector_start,(void*)&directory, SECTOR_SIZE);
-						k++;
-						break;
+		fatherDirPath = (char*)malloc(100);
+		strncpy( fatherDirPath, str, (strlen(str) - strlen(nome)) -1 );
+		dirAddress = change_directory(fatherDirPath);
+		ds_read_sector(dirAddress,(void*)&directory, SECTOR_SIZE);
+		for(i= 0;i<16;i++) {
+			if(!strcmp(directory.entries[i].name,nome)) {
+				ds_read_sector(directory.entries[i].sector_start,(void*)&directoryDel, SECTOR_SIZE);
+				for(j= 0;j<16;j++) {
+					if(directoryDel.entries[i].sector_start != 0) {
+						printf("Diretorio nao esta vazio\n");
+						ds_stop();
+						return -1;
 					}
 				}
-			} else {
-				for(i=0;i<15;i++) {
-					if(!strcmp(directory.entries[i].name, nome[k])){
-						ds_read_sector(directory.entries[i].sector_start,(void*)&directory, SECTOR_SIZE);
-						break;
-					}
-				}
-			}
-		} while(k != i);
-		for(i=0;i<15;i++) {
-			if(!strcmp(directory.entries[i].name, nome[i])) {
+				memset(&sector, 0, SECTOR_SIZE);
+				sector.next_sector = root_dir.free_sectors_list;
+				root_dir.free_sectors_list = directory.entries[i].sector_start;
+				ds_write_sector(directory.entries[i].sector_start,(void*)&sector, SECTOR_SIZE);
 				directory.entries[i].sector_start = 0;
-				ds_write_sector(directory.entries[i].sector_start, (void*)&directory, SECTOR_SIZE); // save root dir
+				ds_write_sector(dirAddress, (void*)&directory, SECTOR_SIZE);
+				success = 1;
 				break;
 			}
 		}
 
 	} else { 
 		for(i= 0;i<15;i++) {
-			if(!strcmp(root_dir.entries[i].name, nome[i])) {
+			if(!strcmp(root_dir.entries[i].name,nome)) {
+				ds_read_sector(root_dir.entries[i].sector_start,(void*)&directoryDel, SECTOR_SIZE);
+				for(j= 0;j<16;j++) {
+					if(directoryDel.entries[i].sector_start != 0) {
+						printf("Diretorio nao esta vazio\n");
+						ds_stop();
+						return -1;
+					}
+				}
+				memset(&sector, 0, SECTOR_SIZE);
+				sector.next_sector = root_dir.free_sectors_list;
+				ds_write_sector(root_dir.entries[i].sector_start,(void*)&sector, SECTOR_SIZE);
+				root_dir.free_sectors_list = root_dir.entries[i].sector_start;
 				root_dir.entries[i].sector_start = 0;
+				success = 1;
 				break;
 			}
 		}
 	}
 
-	root_dir.free_sectors_list = next_free_sector();
+	if(success) { 
+		printf("Diretorio excluido com sucesso\n");
+
+	} else {
+		printf("Verifique se o caminho fornecido esta correto");
+	}
+
 	ds_write_sector(0, (void*)&root_dir, SECTOR_SIZE); // save root dir
 	
-
 	ds_stop();
 	
 	return 0;
